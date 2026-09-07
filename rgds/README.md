@@ -35,6 +35,24 @@ additions that are absent from upstream. Three changes reproduce them:
 The overclock needs no u-boot change: the rkbin BL31 (ATF) already supports the
 2160 MHz PLL. The OC lives in the kernel device tree, not here.
 
+## Verified boot disabled + fastboot fix
+
+`configs/rk3568_defconfig` also carries two changes so custom images flash and
+boot without friction:
+
+- **AVB / boot-image hash disabled** (`# CONFIG_ANDROID_AVB is not set`,
+  `# CONFIG_ANDROID_BOOT_IMAGE_HASH is not set`). Stock u-boot recomputes the
+  Android boot-header SHA1 `id` and refuses to boot if it does not match, so a
+  re-packed boot image is rejected unless the `id` is written exactly the way
+  u-boot recomputes it. Disabling verification lets any locally built boot image
+  boot as-is. (The companion kernel repo also patches its boot-image `id` to the
+  u-boot-correct value, so its images boot on a stock AVB-on u-boot too.)
+- **Fastboot buffer relocated** `0x00c00800` -> `0x20000000`
+  (`CONFIG_FASTBOOT_BUF_ADDR`, size `0x08000000`). The default buffer overlaps
+  the kernel load region, so `fastboot usb 0` from the u-boot console failed with
+  `Sysmem Error: "FASTBOOT" ... alloc is overlap with existence "KERNEL"` after a
+  boot attempt. Moving it into free DRAM fixes fastboot.
+
 ## Build
 
 ```
