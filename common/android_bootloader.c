@@ -1343,6 +1343,17 @@ int android_bootloader_boot_flow(struct blk_desc *dev_desc,
 	}
 #else
 	/*
+	 * RG DS: AVB is disabled, so nothing else advertises the verified-boot
+	 * state to userspace.  Report the bootloader-unlocked "orange" state (and
+	 * clear flash.locked) so the framework and fastbootd treat the device as
+	 * unlocked; otherwise ro.boot.verifiedbootstate is empty and
+	 * ro.boot.flash.locked defaults to 1, which makes fastbootd refuse
+	 * `fastboot flash` with "Command not available on locked devices".
+	 */
+	env_update("bootargs", "androidboot.verifiedbootstate=orange");
+	env_update("bootargs", "androidboot.flash.locked=0");
+
+	/*
 	 * 2. Load the boot/recovery from the desired "boot" partition.
 	 * Determine if this is an AOSP image.
 	 */

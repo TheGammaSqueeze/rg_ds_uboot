@@ -785,35 +785,19 @@ static int fb_read_var(char *cmd, char *response,
 		break;
 	}
 	case FB_UNLOCKED: {
-#ifdef CONFIG_RK_AVB_LIBAVB_USER
-		uint8_t lock_state = 0;
-
-		if (!rk_avb_read_lock_state(&lock_state))
-			fb_add_string(response, chars_left, "read lock_state failed", NULL);
-		if (lock_state)
-			fb_add_string(response, chars_left, "avb unlock", NULL);
-		else
-			fb_add_string(response, chars_left, "avb lock", NULL);
-#else
-		fb_add_string(response, chars_left, "not implemented", NULL);
-		ret = -1;
-#endif
+		/*
+		 * RG DS: AVB is disabled (see rk3568_defconfig) and the device
+		 * is always treated as unlocked.  Report the AOSP-standard "yes"
+		 * (not Rockchip's "avb unlock") so host fastboot permits logical/
+		 * super resize and all flash operations instead of refusing with
+		 * "Command not available on locked devices".
+		 */
+		fb_add_string(response, chars_left, "yes", NULL);
 		break;
 	}
 	case FB_FLASH_UNLOCKED: {
-#ifdef CONFIG_RK_AVB_LIBAVB_USER
-		uint8_t flash_lock_state = 0;
-
-		if (!rk_avb_read_flash_lock_state(&flash_lock_state))
-			fb_add_string(response, chars_left, "read flash_lock_state failed", NULL);
-		if (flash_lock_state)
-			fb_add_string(response, chars_left, "flash unlock", NULL);
-		else
-			fb_add_string(response, chars_left, "flash lock", NULL);
-#else
-		fb_add_string(response, chars_left, "not implemented", NULL);
-		ret = -1;
-#endif
+		/* RG DS: always flash-unlocked, see FB_UNLOCKED above. */
+		fb_add_string(response, chars_left, "yes", NULL);
 		break;
 	}
 	case  FB_OFF_MODE_CHARGE: {
@@ -1806,27 +1790,12 @@ static void cb_flash(struct usb_ep *ep, struct usb_request *req)
 {
 	char *cmd = req->buf;
 	char response[FASTBOOT_RESPONSE_LEN] = {0};
-#ifdef CONFIG_RK_AVB_LIBAVB_USER
-	uint8_t flash_lock_state;
 
-	if (rk_avb_read_flash_lock_state(&flash_lock_state)) {
-		/* write the device flashing unlock when first read */
-		if (rk_avb_write_flash_lock_state(1)) {
-			fastboot_tx_write_str("FAILflash lock state write failure");
-			return;
-		}
-		if (rk_avb_read_flash_lock_state(&flash_lock_state)) {
-			fastboot_tx_write_str("FAILflash lock state read failure");
-			return;
-		}
-	}
-
-	if (flash_lock_state == 0) {
-		fastboot_tx_write_str("FAILThe device is locked, can not flash!");
-		printf("The device is locked, can not flash!\n");
-		return;
-	}
-#endif
+	/*
+	 * RG DS: AVB is disabled and the device is always unlocked, so do not
+	 * gate flashing on the AVB flash-lock state (which would otherwise fail
+	 * with "The device is locked, can not flash!").
+	 */
 	strsep(&cmd, ":");
 	if (!cmd) {
 		pr_err("missing partition name");
