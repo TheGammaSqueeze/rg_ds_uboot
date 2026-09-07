@@ -1,0 +1,29 @@
+/*
+ * (C) Copyright 2017 Rockchip Electronics Co., Ltd
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
+ */
+
+#ifndef VIDEO_ROCKCHIP_H
+#define VIDEO_ROCKCHIP_H
+
+#ifdef CONFIG_ROCKCHIP_VIDCONSOLE
+#define DRM_ROCKCHIP_FB_SIZE	\
+	CONFIG_ROCKCHIP_VIDCONSOLE_MEM_RESERVED_SIZE_MBYTES * 1024 * 1024
+#define DRM_ROCKCHIP_FB_WIDTH		CONFIG_ROCKCHIP_VIDCONSOLE_WIDTH
+#define DRM_ROCKCHIP_FB_HEIGHT		CONFIG_ROCKCHIP_VIDCONSOLE_HEIGHT
+#define DRM_ROCKCHIP_FB_BPP		CONFIG_ROCKCHIP_VIDCONSOLE_BPP
+#else
+#define DRM_ROCKCHIP_FB_SIZE		0
+#define DRM_ROCKCHIP_FB_WIDTH		0
+#define DRM_ROCKCHIP_FB_HEIGHT		0
+#define DRM_ROCKCHIP_FB_BPP		VIDEO_BPP32
+#endif
+
+#define MEMORY_POOL_SIZE	CONFIG_DRM_MEM_RESERVED_SIZE_MBYTES * 1024 * 1024
+
+int rockchip_show_bmp(const char *bmp);
+int rockchip_show_logo(void);
+void rockchip_display_fixup(void *blob);
+
+#endif
