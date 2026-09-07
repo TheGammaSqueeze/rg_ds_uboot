@@ -2183,6 +2183,15 @@ static int rockchip_display_fixup_dts(void *blob)
 	int conn_ep_offset;
 	const char *route_sub_path, *path;
 
+	/*
+	 * RG DS: the panels are two INDEPENDENT DSI displays (vp0->dsi0 and
+	 * vp1->dsi1). This fixup forces every connector onto VOP endpoint@0
+	 * and disables endpoint@1, which collapses the second panel (blank
+	 * screen). Skip it so the device tree's independent dual-DSI routing
+	 * is preserved, matching the stock RG DS bootloader.
+	 */
+	return 0;
+
 	/* Don't go further if new variant after
 	 * reading PMUGRF_SOC_CON15
 	 */

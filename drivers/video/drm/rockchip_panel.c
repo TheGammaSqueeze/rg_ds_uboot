@@ -67,6 +67,7 @@ struct rockchip_panel_priv {
 	struct udevice *backlight;
 	struct spi_slave *spi_slave;
 	struct gpio_desc enable_gpio;
+	struct gpio_desc enable1_gpio;
 	struct gpio_desc reset_gpio;
 
 	int cmd_type;
@@ -308,6 +309,9 @@ static void panel_simple_prepare(struct rockchip_panel *panel)
 	if (dm_gpio_is_valid(&priv->enable_gpio))
 		dm_gpio_set_value(&priv->enable_gpio, 1);
 
+	if (dm_gpio_is_valid(&priv->enable1_gpio))
+		dm_gpio_set_value(&priv->enable1_gpio, 1);
+
 	if (plat->delay.prepare)
 		mdelay(plat->delay.prepare);
 
@@ -487,6 +491,15 @@ static int rockchip_panel_probe(struct udevice *dev)
 				   &priv->enable_gpio, GPIOD_IS_OUT);
 	if (ret && ret != -ENOENT) {
 		printf("%s: Cannot get enable GPIO: %d\n", __func__, ret);
+		return ret;
+	}
+
+	/* RG DS: panels carry a second enable line (enable1-gpios) that the
+	 * stock bootloader also asserts; without it the panel stays dark. */
+	ret = gpio_request_by_name(dev, "enable1-gpios", 0,
+				   &priv->enable1_gpio, GPIOD_IS_OUT);
+	if (ret && ret != -ENOENT) {
+		printf("%s: Cannot get enable1 GPIO: %d\n", __func__, ret);
 		return ret;
 	}
 

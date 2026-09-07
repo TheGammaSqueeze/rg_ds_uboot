@@ -18,6 +18,7 @@
 #include <console.h>
 #include <debug_uart.h>
 #include <dm.h>
+#include <led.h>
 #include <dvfs.h>
 #include <fdt_support.h>
 #include <io-domain.h>
@@ -498,6 +499,24 @@ int board_late_init(void)
 
 #ifdef CONFIG_ROCKCHIP_MINIDUMP
 	rk_minidump_init();
+#endif
+
+#ifdef CONFIG_LED
+	{
+		/*
+		 * RG DS: the two DSI panels are powered by the gpio-leds
+		 * "backlight_0_power" / "backlight_1_power" (default-state =
+		 * "on").  u-boot has no automatic default-state handling, so
+		 * probe all LED devices here to turn them on BEFORE the display
+		 * initialises; otherwise the panels get their DSI/VOP brought up
+		 * but stay unpowered (blank screen), whereas the stock RG DS
+		 * bootloader powers them.
+		 */
+		struct udevice *led_dev;
+
+		uclass_foreach_dev_probe(UCLASS_LED, led_dev)
+			;
+	}
 #endif
 
 #ifdef CONFIG_DRM_ROCKCHIP
