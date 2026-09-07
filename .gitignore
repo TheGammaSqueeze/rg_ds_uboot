@@ -87,3 +87,12 @@ GTAGS
 *.orig
 *~
 \#*#
+
+# RG DS build artefacts (rgds/build-uboot.sh + make.sh byproducts)
+/out/
+/bl31.elf
+/tee.bin
+bl31_0x*.bin.gz
+bl31_0x*.bin.digest
+tee.bin.gz
+tee.bin.digest
