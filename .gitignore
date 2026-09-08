@@ -96,3 +96,5 @@ bl31_0x*.bin.gz
 bl31_0x*.bin.digest
 tee.bin.gz
 tee.bin.digest
+/out-plus/
+/out-plus-build.log
