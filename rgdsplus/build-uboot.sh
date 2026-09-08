@@ -13,7 +13,7 @@
 # it with our AVB-off u-boot proper: the stock SPL loads our uboot.img FIT.
 #
 #   rgdsplus/stock-idbloader.img   stock DDR init + SPL (LBA 64..16383 of the
-#                                  stock SD), staged here (gitignored).
+#                                  stock SD), committed in-tree.
 #   out-plus/loader.img            = the stock idbloader          -> SD LBA 64
 #   out-plus/uboot.img             our U-Boot FIT (u-boot+ATF+OP-TEE) -> uboot part
 #
