@@ -52,9 +52,22 @@ cp "$STOCK_IDB" "$OUT/loader.img"
 # ---- 3. collect ------------------------------------------------------------
 [ -f "$UDIR/uboot.img" ] && cp "$UDIR/uboot.img" "$OUT/" && log "copied uboot.img -> out-plus/uboot.img"
 
+# ---- 4. overclock variant: ATF CPU 2160 MHz --------------------------------
+# RK3568 armclk is ATF(BL31)-owned via SCMI; rkbin ships BL31 as a blob, so the
+# CPU OC is a deterministic binary patch of the built FIT (rate list + PLL-config
+# + FIT sha), matching the shipped RG DS. apply_oc_atf.py self-locates the atf-3
+# node so it is reproducible across rebuilds. Pair with the DT opp-2160000000.
+if [ -f "$OUT/uboot.img" ] && command -v python3 >/dev/null; then
+  cp "$OUT/uboot.img" "$OUT/uboot_oc.img"
+  python3 "$HERE/apply_oc_atf.py" "$OUT/uboot_oc.img" && \
+    log "built out-plus/uboot_oc.img (CPU 2160 MHz OC)" || \
+    { log "OC patch FAILED - shipping stock uboot only"; rm -f "$OUT/uboot_oc.img"; }
+fi
+
 cat <<EOF
 
 Done. RG DS Plus bootloader chain in $OUT :
    out-plus/loader.img   stock idbloader (LPDDR3 DDR init v1.25 + SPL)  -> SD LBA 64
-   out-plus/uboot.img    our U-Boot FIT (u-boot + ATF + OP-TEE)         -> uboot partition
+   out-plus/uboot.img    our U-Boot FIT (u-boot + ATF + OP-TEE), stock 1992  -> uboot partition
+   out-plus/uboot_oc.img same FIT, ATF patched for CPU 2160 MHz OC (flash this for OC)
 EOF
