@@ -1840,6 +1840,38 @@ static ulong rk3568_dclk_vop_set_clk(struct rk3568_clk_priv *priv,
 
 	con = readl(&cru->clksel_con[conid]);
 	sel = (con & DCLK0_VOP_SEL_MASK) >> DCLK0_VOP_SEL_SHIFT;
+	/*
+	 * The HPLL and VPLL paths re-rate the PLL itself, and rockchip_pll_set_rate()
+	 * always powers the PLL down and relocks it, even for the rate it already
+	 * runs at. On a dual-panel board both video ports take their dclk from the
+	 * same PLL (the muxes reset to HPLL), so bringing up the second port used to
+	 * relock the PLL the first port was already scanning from: that port and its
+	 * DSI video stream fell out of step with the panel (split, offset and colour
+	 * errors that the kernel then inherited with the logo). If the running PLL
+	 * can already produce the requested dclk through the divider, only program
+	 * the mux and divider and leave the PLL alone.
+	 */
+	if (sel == DCLK_VOP_SEL_HPLL || sel == DCLK_VOP_SEL_VPLL) {
+		ulong cur = (sel == DCLK_VOP_SEL_HPLL)
+			    ? rk3568_pmu_pll_get_rate(priv, HPLL)
+			    : rockchip_pll_get_rate(&rk3568_pll_clks[VPLL],
+						    priv->cru, VPLL);
+		/*
+		 * The PLL read-back is not exact (62800000 requested reads as
+		 * 62799999), so accept a divider that lands within 0.1 percent.
+		 */
+		div = rate ? DIV_ROUND_CLOSEST(cur, rate) : 0;
+		if (div >= 1 && div <= 256 &&
+		    abs((long)(cur - div * rate)) <= (long)(rate / 1000)) {
+			rk_clrsetreg(&cru->clksel_con[conid],
+				     DCLK0_VOP_DIV_MASK | DCLK0_VOP_SEL_MASK,
+				     (sel << DCLK0_VOP_SEL_SHIFT) |
+				     ((div - 1) << DCLK0_VOP_DIV_SHIFT));
+			debug("%s: reuse %s at %lu for dclk %lu (div %u)\n", __func__,
+			      sel == DCLK_VOP_SEL_HPLL ? "hpll" : "vpll", cur, rate, div);
+			return rk3568_dclk_vop_get_clk(priv, clk_id);
+		}
+	}
 
 	if (sel == DCLK_VOP_SEL_HPLL) {
 		div = 1;
